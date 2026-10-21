@@ -13,10 +13,9 @@ make sure that nothing leaves that machine unless you decide so.
 | Component | Reads | Writes | Network |
 |---|---|---|---|
 | `db` (PostgreSQL + pgvector) | | | internal network only, no route out |
-| `app` (API + UI) | database, data volume | database, data volume | LAN port 8000; reaches your LLM gateway; reaches the fetcher when deployed |
+| `app` (API + UI + MCP) | database, data volume (the AI tools: the read-only role) | database, data volume | LAN port 8000; reaches your LLM gateway; reaches the fetcher when deployed |
 | `worker` | database, data volume, embeddings service | database | internal network only; with `docker-compose.gateway.yml` also the LAN, to reach the LLM gateway for embeddings |
 | `embeddings` | model cache | | internal network only; the one-shot `embeddings-download` reaches huggingface.co once |
-| `mcp` (optional) | database (read-only role) | audit rows, optional notes | LAN port 8765 |
 | `avatar-fetcher` (optional) | | | internal network and the internet (Instagram), only when you click |
 | `openwebui`, `ollama` (optional) | | their own volumes | LAN port 3000; Ollama is internal only |
 
@@ -113,7 +112,7 @@ stored secrets (not `YADVAULT_SECRET_KEY`, which you keep yourself).
 ## What you still have to do
 
 - **Keep the ports on your LAN.** The services bind to `BIND_ADDRESS` (default: every
-  interface of the host). Do not forward 8000, 8765 or 3000 on your router. If other devices on
+  interface of the host). Do not forward 8000 or 3000 on your router. If other devices on
   the LAN are not trusted, bind to `127.0.0.1` and use SSH port forwarding, or restrict the
   ports with the host firewall to `LAN_SUBNET` (see [operations.md](operations.md)).
 - **Use HTTPS on the LAN** if you log in from other devices: `docker-compose.https.yml` runs

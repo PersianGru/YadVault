@@ -36,8 +36,9 @@ The screenshots show made-up data: no real export, name or username.
   a key that never stays on the server, and download them to keep a copy elsewhere (free).
 - **Save a conversation as PDF**, whole or some days of it, with its photos, in any script. An
   **evidence copy** (Pro) adds the exact time of every message in UTC, where it came from in the
-  export and a SHA-256 checksum, so anyone with the original export can check that nothing was
-  changed (`yadvault evidence verify`; see [docs/evidence.md](docs/evidence.md)).
+  export and a SHA-256 checksum, so anyone with the original export can check each message against
+  it (`yadvault evidence verify` prints what the export says for each, to compare with the pages;
+  see [docs/evidence.md](docs/evidence.md)).
 - **Photos, videos and voice messages**, if you want them: the import shows how many there are
   and how much space they take, and copies the kinds you choose as a job of its own (the same
   file in a later export takes no more space). They play inside the conversations; the gallery
@@ -144,10 +145,10 @@ docker compose exec ollama ollama pull qwen2.5:7b     # or any model that suppor
 
 Then use `http://ollama:11434/v1` as the gateway address (no key needed).
 
-Open WebUI connects the other way round: its chat uses the archive's tools over MCP. Start the MCP
-server with `docker compose --profile mcp up -d`, create a token in the archive's Settings → MCP
-tokens, and add `http://<your-server>:8765/mcp` as an MCP (Streamable HTTP) connection in Open
-WebUI. Details in [docs/api.md](docs/api.md).
+Open WebUI connects the other way round: its chat uses the archive's tools over MCP. The app
+serves them at `/mcp` on its own address (`http://<your-server>:8000/mcp`, or `https://...` with
+HTTPS on): create a token in the archive's Settings → MCP tokens, and add that address as an MCP
+(Streamable HTTP) connection in Open WebUI. Details in [docs/api.md](docs/api.md).
 
 ## Configuration
 
@@ -166,8 +167,8 @@ change most:
 | `AVATAR_FETCHER_URL`, `ENABLE_AVATAR_FETCH` | The optional public-profile add-on's fetcher (profile `avatars`), off by default |
 | `*_MEMORY_LIMIT` | Container memory limits |
 
-Profiles: `mcp` (MCP server), `avatars` (picture fetcher, the only service with Instagram
-access), `llm` (Ollama, plus Open WebUI as a chat UI). Start a profile with
+Profiles: `embeddings` (semantic search on this server), `avatars` (picture fetcher, the only
+service with Instagram access), `llm` (Ollama, plus Open WebUI as a chat UI). Start a profile with
 `docker compose --profile <name> up -d`. HTTPS on the LAN is optional: the override file
 `docker-compose.https.yml` puts Caddy in front of the app, with its own certificate authority or a
 Let's Encrypt certificate ([docs/https.md](docs/https.md)).

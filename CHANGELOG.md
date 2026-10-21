@@ -4,6 +4,20 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.2.0
+
+- **Breaking: the MCP server is part of the app.** It answers at `/mcp` on the address and port
+  of the web UI and the API (`https://<server>/mcp` with HTTPS on), so its bearer tokens travel
+  encrypted; YadVault Pro and a token with the `mcp` scope are still needed. The `mcp` profile and
+  service, port 8765 (`MCP_PORT`, `MCP_MEMORY_LIMIT`) and `yadvault mcp` are gone: point MCP
+  clients (Open WebUI and others) at the new address and drop `mcp` from `COMPOSE_PROFILES`.
+- **Trial:** "Start a 14-day trial" opens the order page with the installation ID; the key comes
+  by email once the request is approved.
+- **Evidence copies:** `yadvault evidence verify` says what it checks and prints what the export
+  says for every listed message, to compare with the pages; `--json` prints ASCII only.
+- **Fixes:** backup files are readable by their owner only; an import of your own added messages
+  writes attachments only inside the attachments folder; links in Ask answers stay on this site.
+
 ## 0.1.0
 
 The first public release.

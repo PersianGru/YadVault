@@ -4,9 +4,9 @@
 # The embeddings service runs the CUDA image (tag ending in -cuda, amd64 only, several GB).
 services:
   embeddings-download:
-    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}-cuda
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.2.0}-cuda
   embeddings:
-    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}-cuda
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.2.0}-cuda
     environment:
       EMBEDDINGS_DEVICE: cuda
       EMBEDDINGS_BATCH: ${EMBEDDINGS_BATCH:-128}

@@ -11,14 +11,14 @@ when something does not work.
 | Profile | Services | Purpose |
 |---|---|---|
 | `embeddings` | `embeddings-download` (one-shot), `embeddings` | Semantic search on this server (see [Semantic search](#semantic-search)) |
-| `mcp` | `mcp` | The archive's tools for Open WebUI or any MCP client, port 8765 |
 | `avatars` | `avatar-fetcher` | The public-profile add-on's fetcher (no login ever), the only service with internet access |
 | `llm` | `ollama`, `openwebui` | A model server (gateway address `http://ollama:11434/v1`) and a chat UI, for people without an LLM gateway yet |
 
-`docker compose --profile mcp --profile avatars up -d` starts several at once. Profiles are
-remembered per command, so include them in `down` and `logs` calls too, or set
-`COMPOSE_PROFILES=embeddings,mcp` in `.env`. HTTPS is not a profile but an optional override
-file, `docker-compose.https.yml` (see [HTTPS](https.md)).
+`docker compose --profile embeddings --profile avatars up -d` starts several at once. Profiles
+are remembered per command, so include them in `down` and `logs` calls too, or set
+`COMPOSE_PROFILES=embeddings,avatars` in `.env`. HTTPS is not a profile but an optional override
+file, `docker-compose.https.yml` (see [HTTPS](https.md)). The MCP server needs no profile: the app
+serves it at `/mcp` (see [API](api.md#mcp-server)).
 
 ### Public profiles (add-on)
 
@@ -59,8 +59,8 @@ Read the warning in Settings before enabling it: this uses Instagram's unofficia
 stop working at any time, can get the server's address temporarily blocked, and automated
 collection may break Instagram's Terms of Use.
 
-The image's command picks its role: `serve` (web UI and API), `worker` (the background jobs),
-`mcp`, or `all`, the web UI and the jobs in one container, which the NAS templates in
+The image's command picks its role: `serve` (web UI, API and MCP), `worker` (the background jobs),
+or `all`, the web UI and the jobs in one container, which the NAS templates in
 [install/](../install/README.md) use. Every role validates the configuration and applies the
 migrations first; when the database has no read-only role for the AI tools yet, it is created from
 `YADVAULT_READONLY_DATABASE_URL`.
@@ -106,7 +106,9 @@ Backups are encrypted with [age](https://age-encryption.org) when a key is set. 
 makes one on the server and shows the secret key once: save it somewhere else (a password
 manager, a USB stick), tick that you did, and only its public half is kept. You can also paste the
 public key (`age1...`) of a key you already have. Without a key, backups are plain tar files and
-anyone who gets one can read the whole archive.
+anyone who gets one can read the whole archive. Either way, a backup file can be read only by the
+user the app runs as (and root), and so can a backup folder the app creates; on a share that
+ignores file modes, the share's own permissions decide.
 
 Restoring replaces everything, so it stays a server command: copy the backup out of the volume
 (or take the downloaded file) and run the restore script with your key:
@@ -151,7 +153,7 @@ client tools on PATH (or `YADVAULT_PG_BIN`).
 
 ## Network
 
-- Ports: 8000 (web UI and API), 8765 (MCP), 3000 (Open WebUI), 443/80 (Caddy). They bind to
+- Ports: 8000 (web UI, API and MCP), 3000 (Open WebUI), 443/80 (Caddy). They bind to
   `BIND_ADDRESS` from `.env`.
 - Keep them on the LAN. Never forward them on the router. A host firewall rule limited to your
   subnet is the simplest extra guard. Linux with ufw:
@@ -172,7 +174,7 @@ client tools on PATH (or `YADVAULT_PG_BIN`).
   `FORWARDED_ALLOW_IPS` to that proxy's address only: with `*` and port 8000 reachable, any
   client could choose the address the login limits count.
 - An LLM gateway elsewhere on the LAN (LiteLLM, for example): the app only needs to reach its
-  address. Open WebUI needs to reach the archive only to use its tools through the MCP profile.
+  address. Open WebUI needs to reach the archive only to use its tools over MCP (`/mcp` on the app).
 - Single sign-on ([docs/sso.md](sso.md)): the app container needs outbound HTTPS to the provider
   (`login.microsoftonline.com`, or your Okta domain); set `HTTPS_PROXY` in `.env` when it goes
   through a proxy. People's browsers reach the provider directly.
@@ -253,8 +255,8 @@ logged. `LOG_FORMAT=text` switches to plain lines, `LOG_LEVEL=debug` adds detail
 ## Health
 
 `GET /api/health` answers as soon as the process is up; `GET /api/ready` also checks the
-database. Docker's health checks use them; `docker compose ps` shows the state. The MCP server
-has `/health`, the embeddings service `/health` and `/info`, the fetcher `/health`.
+database. Docker's health checks use them; `docker compose ps` shows the state. The embeddings
+service has `/health` and `/info`, the fetcher `/health`.
 
 ## Troubleshooting
 

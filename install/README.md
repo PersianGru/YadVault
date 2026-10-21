@@ -2,9 +2,9 @@
 
 Ready-made templates for the common home-server platforms. They all run two containers: the
 database (PostgreSQL 16 with pgvector) and YadVault itself as one container that serves the web UI
-and runs the background jobs (`all`). That suits a home archive; for very large archives, the
-embeddings service or the MCP server, use the full stack in the repository root (`docker-compose.yml`
-and docs/operations.md).
+(with the MCP server at `/mcp`) and runs the background jobs (`all`). That suits a home archive;
+for very large archives or the embeddings service, use the full stack in the repository root
+(`docker-compose.yml` and docs/operations.md).
 
 | Platform | Template | How |
 |---|---|---|

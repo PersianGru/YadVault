@@ -3,8 +3,10 @@
 # file, or name both in .env:
 #   COMPOSE_FILE=docker-compose.yml:docker-compose.backups.yml
 #   BACKUP_DIR=/mnt/backup-disk/yadvault
-# The containers write there as their own user (uid 999): mkdir -p "$BACKUP_DIR" && chown 999 "$BACKUP_DIR"
-# (or chmod a+rwx). Each backup needs about as much free space as the backup itself.
+# The containers write there as their own user (uid 999):
+#   mkdir -p "$BACKUP_DIR" && chown 999 "$BACKUP_DIR" && chmod 700 "$BACKUP_DIR"
+# Not chmod a+rwx: anyone on the host could then remove or swap backups. Backups are readable by that user
+# only (copy one out with sudo). Each backup needs about as much free space as the backup itself.
 services:
   app:
     environment:

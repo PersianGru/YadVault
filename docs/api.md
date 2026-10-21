@@ -278,9 +278,10 @@ docs/operations.md).
 
 ## MCP server
 
-`yadvault mcp --host <LAN address> --port 8765` serves the same tools over Streamable HTTP at
-`http://<host>:8765/mcp`. Create a token in Settings (scope `mcp`) and send it as
-`Authorization: Bearer <token>`. Every call is written to the audit log (time, token, tool,
+The app serves the same tools over Streamable HTTP at `/mcp`, at the address and port of the web
+UI and the API (`https://<server>/mcp` with HTTPS on, `http://<server>:8000/mcp` without): nothing
+else to start, and one address for a reverse proxy. Create a token in Settings (scope `mcp`) and
+send it as `Authorization: Bearer <token>`. Every call is written to the audit log (time, token, tool,
 parameters, row count; never content); requests are limited to 256 kB and 120 calls per minute
 per token.
 

@@ -1,19 +1,19 @@
-# YadVault: `docker compose up -d` starts the database, the app (API + web UI) and the
-# worker. Profiles add the local embeddings service for semantic search (`embeddings`, on by
-# default through COMPOSE_PROFILES in .env; leave it out when the LLM gateway provides the
-# embeddings), the MCP server (`mcp`), the avatar fetcher (`avatars`, the only service that talks
-# to Instagram) and Ollama with Open WebUI as a chat UI (`llm`). HTTPS with Caddy is the override
+# YadVault: `docker compose up -d` starts the database, the app (API, web UI and the MCP server
+# at /mcp) and the worker. Profiles add the local embeddings service for semantic search
+# (`embeddings`, on by default through COMPOSE_PROFILES in .env; leave it out when the LLM gateway
+# provides the embeddings), the avatar fetcher (`avatars`, the only service that talks to
+# Instagram) and Ollama with Open WebUI as a chat UI (`llm`). HTTPS with Caddy is the override
 # file docker-compose.https.yml. Everything is configured in .env (see .env.example).
 #
 # Networks: `internal` has no route to the outside; db, worker and embeddings live only there.
-# `app` (and mcp, caddy, openwebui) also sit on `edge` so the LAN can reach them and the app can
+# `app` (and caddy, openwebui) also sit on `edge` so the LAN can reach them and the app can
 # reach your LLM gateway. `embeddings-download` is a one-shot job that fetches the embedding model
 # into the cache volume on first start, the only time the embeddings stack touches the network.
 
 name: yadvault
 
 x-app-common: &app-common
-  image: ghcr.io/persiangru/yadvault:${YADVAULT_VERSION:-0.1.0}
+  image: ghcr.io/persiangru/yadvault:${YADVAULT_VERSION:-0.2.0}
   restart: unless-stopped
   env_file: .env
   environment:
@@ -116,7 +116,7 @@ services:
           memory: ${WORKER_MEMORY_LIMIT:-4g}
 
   embeddings-download:
-    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.2.0}
     profiles: [embeddings]
     command: ["python", "download_model.py"]
     restart: "no"
@@ -131,7 +131,7 @@ services:
       - no-new-privileges:true
 
   embeddings:
-    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.2.0}
     profiles: [embeddings]
     restart: unless-stopped
     depends_on:
@@ -164,29 +164,8 @@ services:
         max-size: "20m"
         max-file: "5"
 
-  mcp:
-    <<: *app-common
-    profiles: [mcp]
-    command: ["mcp"]
-    depends_on:
-      app:
-        condition: service_healthy
-    ports:
-      - "${BIND_ADDRESS:-0.0.0.0}:${MCP_PORT:-8765}:8765"
-    networks: [internal, edge]
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=4).status == 200 else 1)"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-    deploy:
-      resources:
-        limits:
-          memory: ${MCP_MEMORY_LIMIT:-1g}
-
   avatar-fetcher:
-    image: ghcr.io/persiangru/yadvault-avatar-fetcher:${YADVAULT_VERSION:-0.1.0}
+    image: ghcr.io/persiangru/yadvault-avatar-fetcher:${YADVAULT_VERSION:-0.2.0}
     profiles: [avatars]
     restart: unless-stopped
     environment:

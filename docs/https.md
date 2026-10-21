@@ -154,8 +154,9 @@ CADDY_DOMAIN=archive.example.com
 - The app trusts the client address Caddy forwards, so the login limits count each device. This
   is safe only because port 8000 is closed: never set `FORWARDED_ALLOW_IPS=*` while port 8000 is
   reachable.
-- The MCP server (profile `mcp`, port 8765) is not behind Caddy; it keeps plain HTTP with bearer
-  tokens.
+- The MCP server is part of the app, at `https://<server>/mcp`, so its bearer tokens travel over
+  HTTPS like everything else. With Let's Encrypt and the server reachable from the internet, it is
+  reachable from there too, for whoever has a token with the `mcp` scope.
 
 ## Troubleshooting
 

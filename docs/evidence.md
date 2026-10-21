@@ -12,7 +12,9 @@ to it; `docker compose exec app python -m yadvault.pdf --list` shows the fonts f
 ## Evidence copies (YadVault Pro)
 
 An **evidence copy** is for a dispute, a complaint or a report of harassment: someone who was not
-there can check that the messages in it are the ones the platform exported, unchanged.
+there can check its messages against the export the platform sent. The copy lists a checksum for
+every message, and the check prints what the export says for each, to compare with the pages
+(see [what a check shows](#what-a-check-shows-and-what-it-does-not)).
 
 - Every message shows its exact time in UTC to the millisecond (as the export has it), the file and
   position it came from in the export (for example `inbox/<conversation>/message_1.json item 17`),
@@ -65,15 +67,35 @@ yadvault evidence verify conversation-...-evidence.pdf the-export.zip
 docker compose exec app yadvault evidence verify /data/copy.pdf /data/import/export-part1.zip /data/import/export-part2.zip
 ```
 
-It finds the conversation in the export, computes every checksum again and says how many messages
-are there unchanged, and lists the ones that are not (exit code 0 when all are). It takes the
+It finds the conversation in the export and computes again the checksum of every message the
+copy's `manifest.json` lists. For each it prints what the export says (the time in UTC, the sender
+as exported, the text, the files and a shared link) or that the message is not in the export, then
+how many are there unchanged (exit code 0 when all are and the list is whole). Text is printed on one
+line, with line breaks, control characters and long runs of spaces written out, so nothing in a
+message can redraw the terminal. `--json` prints the same as JSON, in ASCII only: any other
+character is written as a `\u` escape, which a JSON parser reads back exactly. It takes the
 `manifest.json` saved from the PDF as well. Without YadVault, the table above is enough to write
 the same check in a few lines of any language.
 
-What a check shows: that each message in the copy is in that export with the same time, sender,
-text and attachments. The export itself comes from the platform (it can be requested again from
-the account), so the copy can be traced to it; YadVault does not sign anything with a key of its
-own, because a key on your own server would prove nothing to someone else.
+### What a check shows, and what it does not
+
+- It shows that each message the manifest lists is in that export with the same time, sender,
+  text, attachments and shared link.
+- It does **not** read the pages. The text drawn on a page can be changed in a PDF editor, and a
+  made-up PDF can carry a genuine manifest, so compare the pages with the listing: a message that
+  reads differently there, or is not in it, is not the export's. The page shows the sender's
+  display name, the listing the name as exported; they can differ.
+- Photos and other files are not compared: the listing names each file's path in the export, to
+  open there and compare with the page.
+- The checksum of the list shows only that the list is whole as written. Anyone who changes the
+  list can compute it again, so it is not a tamper check.
+- It does not show that the copy holds every message of the conversation in its range: messages
+  can be left out of a copy.
+- Reactions, and the local times in the headings, are drawn for context and are not covered.
+
+The export itself comes from the platform (it can be requested again from the account), so the
+messages can be traced to it; YadVault does not sign anything with a key of its own, because a key
+on your own server would prove nothing to someone else.
 
 From the command line, `yadvault evidence pdf <conversation id> --out copy.pdf [--evidence]`
 makes the same PDF on the server (`--from`, `--to`, `--tz`, `--no-photos`).
