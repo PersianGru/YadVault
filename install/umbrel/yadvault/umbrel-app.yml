@@ -1,0 +1,27 @@
+manifestVersion: 1
+id: yadvault
+category: files
+name: YadVault
+version: "0.1.0"
+tagline: Your Instagram and Messenger archive, on your own server
+description: >-
+  Import the data export Instagram or Facebook gives you and keep it: browse and search your
+  conversations, see who you talked to most, what Instagram knows about you, who unfollowed you,
+  and save conversations as PDF. Everything stays on your Umbrel.
+
+
+  At the first start, open the app's log (right-click the app → Troubleshoot) for the setup code,
+  then open YadVault and enter it to create your account.
+releaseNotes: ""
+developer: YadVault
+website: https://github.com/PersianGru/YadVault
+dependencies: []
+repo: https://github.com/PersianGru/YadVault
+support: https://github.com/PersianGru/YadVault/issues
+port: 8742
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: YadVault
+submission: https://github.com/PersianGru/YadVault/tree/main/install/umbrel

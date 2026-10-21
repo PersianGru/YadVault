@@ -1,0 +1,9 @@
+# Your configuration and data: never commit them.
+.env
+.env.*
+!.env.example
+backups/
+watch/
+caddy-pki/
+*.tar.age
+*.pgdump

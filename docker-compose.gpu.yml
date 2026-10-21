@@ -1,0 +1,29 @@
+# NVIDIA GPU for the embeddings service (and Ollama in the llm profile). Needs the NVIDIA
+# container toolkit on the host. Use together with the main file:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.gpu.yml   (in .env), then docker compose up -d
+# The embeddings service runs the CUDA image (tag ending in -cuda, amd64 only, several GB).
+services:
+  embeddings-download:
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}-cuda
+  embeddings:
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}-cuda
+    environment:
+      EMBEDDINGS_DEVICE: cuda
+      EMBEDDINGS_BATCH: ${EMBEDDINGS_BATCH:-128}
+    deploy:
+      resources:
+        limits:
+          memory: ${EMBEDDINGS_MEMORY_LIMIT:-8g}
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

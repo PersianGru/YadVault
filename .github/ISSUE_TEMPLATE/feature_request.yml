@@ -1,0 +1,16 @@
+name: Feature request
+description: Something the archive should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you want to do
+      description: The task, in your words, and what gets in the way today
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+      description: Optional. A sketch of the page, the question you would ask, or the command you would run

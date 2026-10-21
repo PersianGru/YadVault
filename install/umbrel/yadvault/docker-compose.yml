@@ -1,0 +1,45 @@
+# YadVault as an umbrelOS app (a community app store folder: this file and umbrel-app.yml).
+# umbrelOS gives every app a stable APP_PASSWORD and APP_SEED, used here as the two database
+# passwords, so there is nothing to fill in. YadVault has its own sign-in, so umbrelOS's is off.
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: yadvault_app_1
+      APP_PORT: 8000
+      PROXY_AUTH_ADD: "false"
+
+  db:
+    image: pgvector/pgvector:pg16
+    restart: on-failure
+    environment:
+      POSTGRES_USER: yadvault
+      POSTGRES_PASSWORD: ${APP_PASSWORD}
+      POSTGRES_DB: yadvault
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data
+    shm_size: 256m
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yadvault -d yadvault"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    image: ghcr.io/persiangru/yadvault:0.1.0
+    user: "1000:1000"  # umbrelOS keeps app data as this user
+    command: ["all"]  # the web app and the job worker in one container
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      YADVAULT_DATABASE_URL: postgresql://yadvault:${APP_PASSWORD}@yadvault_db_1:5432/yadvault
+      YADVAULT_READONLY_DATABASE_URL: postgresql://yadvault_ro:${APP_SEED}@yadvault_db_1:5432/yadvault
+      EMBEDDINGS_PROVIDER: "off"
+    volumes:
+      - ${APP_DATA_DIR}/data/app:/data
+    stop_grace_period: 60s

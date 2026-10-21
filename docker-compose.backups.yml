@@ -1,0 +1,18 @@
+# Backups made in Settings → Backups go to a folder on the host instead of the data volume: another
+# disk, or a mounted share, so a backup does not live next to what it backs up. Use it with the main
+# file, or name both in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.backups.yml
+#   BACKUP_DIR=/mnt/backup-disk/yadvault
+# The containers write there as their own user (uid 999): mkdir -p "$BACKUP_DIR" && chown 999 "$BACKUP_DIR"
+# (or chmod a+rwx). Each backup needs about as much free space as the backup itself.
+services:
+  app:
+    environment:
+      YADVAULT_BACKUP_DIR: /backups
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups
+  worker:
+    environment:
+      YADVAULT_BACKUP_DIR: /backups
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups

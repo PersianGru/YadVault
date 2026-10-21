@@ -1,0 +1,101 @@
+# HTTPS on the LAN with Caddy, turned on by docker-compose.https.yml (docs/https.md). HTTPS_MODE
+# in .env chooses where the certificate comes from:
+#   local            Caddy's own certificate authority (the default). Works for IP addresses and
+#                    local names without internet access. Every device trusts it once: download it
+#                    from http://<server>/yadvault-ca.crt or Settings → HTTPS.
+#   letsencrypt      Let's Encrypt through the HTTP challenge: CADDY_DOMAIN is a public name that
+#                    points at this server, and ports 80 and 443 are reachable from the internet.
+#   letsencrypt-dns  Let's Encrypt through the DNS challenge: the server stays on the LAN. Needs a
+#                    domain at a DNS provider with an API (DNS_PROVIDER, DNS_API_TOKEN); the image
+#                    is then built with that provider's module (docker/caddy/Dockerfile).
+# Inside the container Caddy always listens on 443 (HTTPS) and 80 (plain HTTP); HTTPS_PORT and
+# HTTP_PORT are the host ports they are published on.
+{
+	admin off
+	# the plain-HTTP site below redirects (and serves the local CA); clients without SNI (an IP
+	# address in the browser) get the certificate of CADDY_DEFAULT_SNI
+	auto_https disable_redirects
+	default_sni {$CADDY_DEFAULT_SNI:archive.local}
+	# devices install the local CA themselves; the container's own trust store is not touched
+	skip_install_trust
+	servers :443 {
+		# a plain http:// request on the HTTPS port is redirected to https:// on the same port
+		listener_wrappers {
+			http_redirect
+			tls
+		}
+		# no HTTP/3: its UDP port is not published
+		protocols h1 h2
+	}
+}
+
+# HSTS makes browsers use HTTPS for every port of the name, so turn it off (HSTS=off) when other
+# plain-HTTP services share the server's name. Browsers ignore it for IP addresses.
+(hsts_on) {
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+(hsts_off) {
+}
+
+(tls_local) {
+	tls internal
+}
+
+(tls_letsencrypt) {
+	tls {
+		issuer acme
+	}
+}
+
+(tls_letsencrypt-dns) {
+	tls {
+		issuer acme {
+			dns {$DNS_PROVIDER} {$DNS_API_TOKEN}
+			resolvers {$DNS_RESOLVERS:1.1.1.1 9.9.9.9}
+		}
+	}
+}
+
+# The root certificate of the local CA, for devices to trust. Only the certificate is served,
+# never its key; with Let's Encrypt there is nothing to install.
+(ca_local) {
+	handle /yadvault-ca.crt {
+		root * /data/caddy/pki/authorities/local
+		rewrite * /root.crt
+		header Content-Type application/x-x509-ca-cert
+		header Content-Disposition "attachment; filename=\"yadvault-ca.crt\""
+		header Cache-Control no-store
+		file_server
+	}
+}
+
+(ca_letsencrypt) {
+}
+
+(ca_letsencrypt-dns) {
+}
+
+http:// {
+	import ca_{$HTTPS_MODE:local}
+	handle {
+		redir https://{host}:{$HTTPS_PORT:443}{uri} permanent
+	}
+}
+
+{$CADDY_DOMAIN:archive.local} {
+	import tls_{$HTTPS_MODE:local}
+	encode zstd gzip
+	import hsts_{$HSTS:on}
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+	import ca_{$HTTPS_MODE:local}
+	handle {
+		reverse_proxy app:8000 {
+			flush_interval -1
+		}
+	}
+}

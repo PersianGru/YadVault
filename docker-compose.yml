@@ -1,0 +1,252 @@
+# YadVault: `docker compose up -d` starts the database, the app (API + web UI) and the
+# worker. Profiles add the local embeddings service for semantic search (`embeddings`, on by
+# default through COMPOSE_PROFILES in .env; leave it out when the LLM gateway provides the
+# embeddings), the MCP server (`mcp`), the avatar fetcher (`avatars`, the only service that talks
+# to Instagram) and Ollama with Open WebUI as a chat UI (`llm`). HTTPS with Caddy is the override
+# file docker-compose.https.yml. Everything is configured in .env (see .env.example).
+#
+# Networks: `internal` has no route to the outside; db, worker and embeddings live only there.
+# `app` (and mcp, caddy, openwebui) also sit on `edge` so the LAN can reach them and the app can
+# reach your LLM gateway. `embeddings-download` is a one-shot job that fetches the embedding model
+# into the cache volume on first start, the only time the embeddings stack touches the network.
+
+name: yadvault
+
+x-app-common: &app-common
+  image: ghcr.io/persiangru/yadvault:${YADVAULT_VERSION:-0.1.0}
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    YADVAULT_DATABASE_URL: postgresql://${POSTGRES_USER:-yadvault}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-yadvault}
+    YADVAULT_READONLY_DATABASE_URL: postgresql://yadvault_ro:${YADVAULT_RO_PASSWORD:?Set YADVAULT_RO_PASSWORD in .env}@db:5432/${POSTGRES_DB:-yadvault}
+    YADVAULT_DATA_DIR: /data
+    YADVAULT_EMBEDDINGS_BACKEND: http
+    YADVAULT_EMBEDDINGS_URL: http://embeddings:8001
+    YADVAULT_EMBEDDING_MODEL: ${EMBEDDINGS_MODEL:-intfloat/multilingual-e5-small}
+    YADVAULT_AVATAR_FETCHER_URL: ${AVATAR_FETCHER_URL:-}
+    YADVAULT_LOG_FORMAT: ${LOG_FORMAT:-json}
+    YADVAULT_LOG_LEVEL: ${LOG_LEVEL:-info}
+    YADVAULT_PROXY_HEADERS: ${PROXY_HEADERS:-false}
+    YADVAULT_FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+    YADVAULT_WORKER_HEARTBEAT_FILE: /tmp/worker-alive
+  volumes:
+    - appdata:/data
+    - type: tmpfs
+      target: /tmp
+      tmpfs:
+        size: 1073741824
+  read_only: true
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yadvault}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-yadvault}
+      YADVAULT_RO_PASSWORD: ${YADVAULT_RO_PASSWORD:?Set YADVAULT_RO_PASSWORD in .env}
+      POSTGRES_INITDB_ARGS: --data-checksums
+    command: >-
+      postgres -c shared_buffers=${DB_SHARED_BUFFERS:-512MB} -c maintenance_work_mem=${DB_MAINTENANCE_WORK_MEM:-512MB}
+      -c max_parallel_maintenance_workers=4 -c work_mem=32MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    networks: [internal]
+    shm_size: 256m
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: ${DB_MEMORY_LIMIT:-3g}
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  app:
+    <<: *app-common
+    command: ["serve"]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${PORT:-8000}:8000"
+    networks: [internal, edge]
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: ${APP_MEMORY_LIMIT:-2g}
+
+  worker:
+    <<: *app-common
+    command: ["worker"]
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [internal]
+    stop_grace_period: 120s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; p='/tmp/worker-alive'; sys.exit(0 if os.path.exists(p) and time.time() - os.path.getmtime(p) < 900 else 1)"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: ${WORKER_MEMORY_LIMIT:-4g}
+
+  embeddings-download:
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}
+    profiles: [embeddings]
+    command: ["python", "download_model.py"]
+    restart: "no"
+    environment:
+      EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-intfloat/multilingual-e5-small}
+      HF_TOKEN: ${HF_TOKEN:-}  # only for gated models (EmbeddingGemma); used for the one download
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    volumes:
+      - hfcache:/cache
+    networks: [edge]
+    security_opt:
+      - no-new-privileges:true
+
+  embeddings:
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.1.0}
+    profiles: [embeddings]
+    restart: unless-stopped
+    depends_on:
+      embeddings-download:
+        condition: service_completed_successfully
+    environment:
+      EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-intfloat/multilingual-e5-small}
+      EMBEDDINGS_DEVICE: ${EMBEDDINGS_DEVICE:-cpu}
+      EMBEDDINGS_BATCH: ${EMBEDDINGS_BATCH:-32}
+      HF_HUB_OFFLINE: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    volumes:
+      - hfcache:/cache
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 536870912
+    networks: [internal]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: ${EMBEDDINGS_MEMORY_LIMIT:-3g}
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  mcp:
+    <<: *app-common
+    profiles: [mcp]
+    command: ["mcp"]
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${MCP_PORT:-8765}:8765"
+    networks: [internal, edge]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${MCP_MEMORY_LIMIT:-1g}
+
+  avatar-fetcher:
+    image: ghcr.io/persiangru/yadvault-avatar-fetcher:${YADVAULT_VERSION:-0.1.0}
+    profiles: [avatars]
+    restart: unless-stopped
+    environment:
+      AVATAR_FETCH_PACE_SECONDS: ${AVATAR_FETCH_PACE_SECONDS:-15}
+      MEDIA_PACE_SECONDS: ${MEDIA_PACE_SECONDS:-0.5}
+    networks: [internal, edge]
+    read_only: true
+    volumes:
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 67108864
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ollama:
+    image: ollama/ollama:0.40.7
+    profiles: [llm]
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: ${OLLAMA_MEMORY_LIMIT:-12g}
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:v0.12.3
+    profiles: [llm]
+    restart: unless-stopped
+    depends_on: [ollama]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_AUTH: "true"
+      ENABLE_SIGNUP: "false"
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${OPEN_WEBUI_PORT:-3000}:8080"
+    volumes:
+      - openwebui:/app/backend/data
+    networks: [internal, edge]
+
+networks:
+  internal:
+    internal: true
+  edge: {}
+
+volumes:
+  pgdata:
+  appdata:
+  hfcache:
+  ollama:
+  openwebui:

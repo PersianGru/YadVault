@@ -1,0 +1,101 @@
+# YadVault on CasaOS: App Store → Custom Install → Import (⇪) → paste this file. See README.md.
+#
+# Before the first start, replace the two CHANGE-ME passwords: the database password appears twice
+# (db and app), the tools password once. Letters and digits only (they are part of an address).
+name: yadvault
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: yadvault-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: yadvault
+      POSTGRES_PASSWORD: CHANGE-ME
+      POSTGRES_DB: yadvault
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - db:/var/lib/postgresql/data
+    shm_size: 256m
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yadvault -d yadvault"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+    x-casaos:
+      envs:
+        - container: POSTGRES_PASSWORD
+          description:
+            en_us: The database password (the same as in the app's YADVAULT_DATABASE_URL)
+
+  app:
+    image: ghcr.io/persiangru/yadvault:0.1.0
+    container_name: yadvault
+    command: ["all"]  # the web app and the job worker in one container
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      YADVAULT_DATABASE_URL: postgresql://yadvault:CHANGE-ME@db:5432/yadvault
+      YADVAULT_READONLY_DATABASE_URL: postgresql://yadvault_ro:CHANGE-ME-TOO@db:5432/yadvault
+      EMBEDDINGS_PROVIDER: "off"
+    volumes:
+      - data:/data
+    ports:
+      - target: 8000
+        published: "8000"
+        protocol: tcp
+    stop_grace_period: 60s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    x-casaos:
+      envs:
+        - container: YADVAULT_DATABASE_URL
+          description:
+            en_us: The database address with its password (the same password as the db container's)
+        - container: YADVAULT_READONLY_DATABASE_URL
+          description:
+            en_us: The read-only role of the AI tools, with a password of its own (it is created at the first start)
+      ports:
+        - container: "8000"
+          description:
+            en_us: Web UI
+      volumes:
+        - container: /data
+          description:
+            en_us: Uploads, copied media, profile pictures, backups and the key of the stored secrets
+
+volumes:
+  db:
+  data:
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: app
+  author: YadVault
+  developer: YadVault
+  category: Utilities
+  icon: https://raw.githubusercontent.com/PersianGru/YadVault/main/install/icon.png
+  title:
+    en_us: YadVault
+  tagline:
+    en_us: Your Instagram and Messenger archive, on your own server
+  description:
+    en_us: >-
+      Import the data export Instagram or Facebook gives you and keep it: browse and search your
+      conversations, see who you talked to most, what Instagram knows about you, who unfollowed
+      you, and save conversations as PDF. Everything stays on this server.
+  tips:
+    before_install:
+      en_us: >-
+        Replace the CHANGE-ME passwords before installing (letters and digits). At the first start
+        the app's log shows a setup code; open the web UI and enter it to create your account.
+  index: /
+  port_map: "8000"

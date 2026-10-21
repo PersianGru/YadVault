@@ -1,0 +1,16 @@
+# HTTPS_MODE=letsencrypt-dns only, on top of docker-compose.https.yml (docs/https.md):
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml:docker-compose.https-dns.yml
+# Let's Encrypt's DNS challenge needs Caddy with your DNS provider's module (DNS_PROVIDER in .env,
+# github.com/caddy-dns/<name>). It is built once on this server from the official Caddy images by
+# docker/caddy/Dockerfile: the first `docker compose up -d` takes a few minutes, needs internet
+# access and about 1 GB of memory. Nothing of YadVault is built here.
+services:
+  caddy:
+    image: yadvault-caddy:dns-${DNS_PROVIDER:?Set DNS_PROVIDER in .env}
+    build:
+      context: docker/caddy
+      target: letsencrypt-dns
+      args:
+        CADDY_VERSION: "2.11.7"
+        DNS_PROVIDER: ${DNS_PROVIDER:-}
+    pull_policy: build

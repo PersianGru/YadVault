@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>YadVault</Name>
+  <Repository>ghcr.io/persiangru/yadvault:0.1.0</Repository>
+  <Registry>https://github.com/PersianGru/YadVault/pkgs/container/yadvault</Registry>
+  <Network>yadvault</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/PersianGru/YadVault/issues</Support>
+  <Project>https://github.com/PersianGru/YadVault</Project>
+  <Overview>Your Instagram and Messenger archive on your own server: import the data export Instagram or Facebook gives you, browse and search your conversations, see who you talked to most, what Instagram knows about you and who unfollowed you, and save conversations as PDF. Needs the YadVault-DB container on the same custom network "yadvault". At the first start the log shows a setup code: open the web UI and enter it to create your account.</Overview>
+  <Category>Productivity: Tools: Backup:</Category>
+  <WebUI>http://[IP]:[PORT:8000]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/PersianGru/YadVault/main/install/icon.png</Icon>
+  <ExtraParams>--user 99:100 --stop-timeout=60 --cap-drop=ALL --security-opt no-new-privileges:true</ExtraParams>
+  <PostArgs>all</PostArgs>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>The YadVault-DB container, running on the custom Docker network "yadvault".</Requires>
+  <Config Name="Web UI port" Target="8000" Default="8000" Mode="tcp" Description="The port of the web UI." Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/yadvault/data" Mode="rw" Description="Uploads, copied photos and videos, profile pictures, backups and the key of the stored secrets." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/yadvault/data</Config>
+  <Config Name="Database address" Target="YADVAULT_DATABASE_URL" Default="postgresql://yadvault:CHANGE-ME@YadVault-DB:5432/yadvault" Mode="" Description="Put the YadVault-DB password where CHANGE-ME is." Type="Variable" Display="always" Required="true" Mask="true">postgresql://yadvault:CHANGE-ME@YadVault-DB:5432/yadvault</Config>
+  <Config Name="Read-only address (AI tools)" Target="YADVAULT_READONLY_DATABASE_URL" Default="postgresql://yadvault_ro:CHANGE-ME-TOO@YadVault-DB:5432/yadvault" Mode="" Description="Choose a second password (letters and digits) for the read-only role of the AI tools; it is created at the first start." Type="Variable" Display="always" Required="true" Mask="true">postgresql://yadvault_ro:CHANGE-ME-TOO@YadVault-DB:5432/yadvault</Config>
+  <Config Name="Semantic search" Target="EMBEDDINGS_PROVIDER" Default="off" Mode="" Description="off, or gateway to use an embedding model at your LLM gateway (Settings → Semantic search)." Type="Variable" Display="advanced" Required="false" Mask="false">off</Config>
+  <Config Name="License key" Target="YADVAULT_LICENSE_KEY" Default="" Mode="" Description="Optional: a YadVault Pro key (it can also be entered in Settings → License)." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+</Container>

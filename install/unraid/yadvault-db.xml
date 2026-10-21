@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>YadVault-DB</Name>
+  <Repository>pgvector/pgvector:pg16</Repository>
+  <Registry>https://hub.docker.com/r/pgvector/pgvector</Registry>
+  <Network>yadvault</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/PersianGru/YadVault/issues</Support>
+  <Project>https://github.com/PersianGru/YadVault</Project>
+  <Overview>The database of YadVault (PostgreSQL 16 with pgvector). Install it first, on the custom Docker network "yadvault", then the YadVault container on the same network. Choose the password (letters and digits) and use the same one in YadVault's database address.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/PersianGru/YadVault/main/install/icon.png</Icon>
+  <ExtraParams>--shm-size=256m --stop-timeout=60</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>The custom Docker network "yadvault" (docker network create yadvault).</Requires>
+  <Config Name="Database files" Target="/var/lib/postgresql/data" Default="/mnt/user/appdata/yadvault/db" Mode="rw" Description="Where the database keeps its files (appdata on the cache pool is best)." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/yadvault/db</Config>
+  <Config Name="Database user" Target="POSTGRES_USER" Default="yadvault" Mode="" Description="Keep it: YadVault's database address uses it." Type="Variable" Display="advanced" Required="true" Mask="false">yadvault</Config>
+  <Config Name="Database name" Target="POSTGRES_DB" Default="yadvault" Mode="" Description="Keep it: YadVault's database address uses it." Type="Variable" Display="advanced" Required="true" Mask="false">yadvault</Config>
+  <Config Name="Database password" Target="POSTGRES_PASSWORD" Default="CHANGE-ME" Mode="" Description="Letters and digits. The same password goes into YadVault's database address." Type="Variable" Display="always" Required="true" Mask="true">CHANGE-ME</Config>
+  <Config Name="Checksums" Target="POSTGRES_INITDB_ARGS" Default="--data-checksums" Mode="" Description="Data checksums when the database is created." Type="Variable" Display="advanced" Required="false" Mask="false">--data-checksums</Config>
+</Container>

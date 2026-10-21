@@ -1,0 +1,66 @@
+# Optional HTTPS on the LAN: Caddy in front of the app (docs/https.md). Turn it on by naming both
+# files in .env, so every docker compose command picks them up, then `docker compose up -d`:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
+# (with docker-compose.gateway.yml as well: docker-compose.yml:docker-compose.gateway.yml:docker-compose.https.yml)
+# Turn it off again by removing docker-compose.https.yml from COMPOSE_FILE.
+#
+# HTTPS_MODE chooses the certificate: local (Caddy's own certificate authority, the default),
+# letsencrypt (HTTP challenge, public name and ports) or letsencrypt-dns (DNS challenge, stays on
+# the LAN). See docker/caddy/Caddyfile.
+# letsencrypt-dns needs Caddy with your DNS provider's module, built once on this server from the
+# official Caddy images: add docker-compose.https-dns.yml as well (docs/https.md).
+#
+# HTTPS_PORT (default 443) and HTTP_PORT (default 80) are the host ports; on a host where other
+# services use 443, for example HTTPS_PORT=8000 (the app's own port, which is closed here).
+# HTTP_PORT only redirects to HTTPS and, in the local mode, serves the CA certificate.
+#
+# The app's port 8000 is no longer published, so every request from the LAN goes through Caddy.
+# Only containers of this stack can reach the app directly; that is why it may trust the client
+# address Caddy forwards (X-Forwarded-For, which Caddy sets itself and never takes from the
+# client), and the login rate limits count real client addresses. Needs Docker Compose 2.24 or
+# later (for !reset).
+services:
+  app:
+    ports: !reset []
+    environment:
+      YADVAULT_PROXY_HEADERS: "true"
+      YADVAULT_FORWARDED_ALLOW_IPS: "*"
+      YADVAULT_HTTPS_MODE: ${HTTPS_MODE:-local}
+      YADVAULT_HTTPS_PORT: ${HTTPS_PORT:-443}
+      YADVAULT_HTTP_PORT: ${HTTP_PORT:-80}
+
+  caddy:
+    # the official Caddy image; letsencrypt-dns adds docker-compose.https-dns.yml (docs/https.md)
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      HTTPS_MODE: ${HTTPS_MODE:-local}
+      HTTPS_PORT: ${HTTPS_PORT:-443}
+      HSTS: ${HSTS:-on}
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-archive.local}
+      CADDY_DEFAULT_SNI: ${CADDY_DEFAULT_SNI:-${CADDY_DOMAIN:-archive.local}}
+      DNS_PROVIDER: ${DNS_PROVIDER:-}
+      DNS_API_TOKEN: ${DNS_API_TOKEN:-}
+      DNS_RESOLVERS: ${DNS_RESOLVERS:-1.1.1.1 9.9.9.9}
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:443"
+      - "${BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  caddy_data:
+  caddy_config:

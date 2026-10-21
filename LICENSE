@@ -1,0 +1,17 @@
+Copyright (c) 2026 PersianGru. All rights reserved, except as set out below.
+
+The files in this repository (the Docker Compose files, the configuration example, the install
+templates, the scripts and the documentation) may be used, copied and modified by anyone to deploy,
+run, back up and maintain YadVault, and may be shared with others for that purpose together with
+this notice.
+
+These files are provided "as is", without warranty of any kind, express or implied. In no event
+shall the copyright holder be liable for any claim, damages or other liability arising from them or
+from their use.
+
+YadVault itself, the software in the container images ghcr.io/persiangru/yadvault,
+ghcr.io/persiangru/yadvault-embeddings and ghcr.io/persiangru/yadvault-avatar-fetcher, is
+proprietary and is not covered by this notice. Its use is governed by the YadVault end-user license
+agreement. No right to the YadVault name or logo is granted.
+
+YadVault is not affiliated with, endorsed by or sponsored by Instagram or Meta.

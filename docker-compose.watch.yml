@@ -1,0 +1,14 @@
+# The watch folder on the host (Settings → Import → Watch folder, the unfollower tracker): exports
+# dropped into WATCH_DIR (default ./watch next to this file) are imported on their own. Keep the
+# setting at its default, data/watch. Use it with the main file, or name both in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.watch.yml
+# The containers read the folder as their own user; to let them delete imported exports
+# ("Delete an export from the folder after it is imported"), make it writable for them, for
+# example: mkdir -p watch && chmod a+rwx watch
+services:
+  app:
+    volumes:
+      - ${WATCH_DIR:-./watch}:/data/watch
+  worker:
+    volumes:
+      - ${WATCH_DIR:-./watch}:/data/watch

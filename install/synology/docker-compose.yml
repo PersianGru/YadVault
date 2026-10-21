@@ -1,0 +1,53 @@
+# YadVault on Synology DSM 7.2 or later: Container Manager → Project → Create, source "Upload
+# docker-compose.yml", this file. See README.md next to it.
+#
+# Before the first start, replace the two CHANGE-ME passwords: the database password appears twice
+# (db and app), the tools password once. Letters and digits only (they are part of an address).
+name: yadvault
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: yadvault-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: yadvault
+      POSTGRES_PASSWORD: CHANGE-ME
+      POSTGRES_DB: yadvault
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - db:/var/lib/postgresql/data
+    shm_size: 256m
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yadvault -d yadvault"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+
+  app:
+    image: ghcr.io/persiangru/yadvault:0.1.0
+    container_name: yadvault
+    command: ["all"]  # the web app and the job worker in one container
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      YADVAULT_DATABASE_URL: postgresql://yadvault:CHANGE-ME@db:5432/yadvault
+      YADVAULT_READONLY_DATABASE_URL: postgresql://yadvault_ro:CHANGE-ME-TOO@db:5432/yadvault
+      EMBEDDINGS_PROVIDER: "off"  # semantic search: Settings → Semantic search (an embedding model at your LLM gateway)
+    volumes:
+      - data:/data
+    ports:
+      - "8000:8000"
+    stop_grace_period: 60s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  db:
+  data:

@@ -1,0 +1,42 @@
+name: Bug report
+description: Something does not work as described
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. Please never paste message content, names, usernames or any part of your export.
+        For import problems, describe the export's folders and file names (structure only, never any content).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: From Settings, or `docker compose exec app yadvault version`
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant lines from `docker compose logs app worker`, with anything personal removed
+      render: text
+  - type: dropdown
+    id: setup
+    attributes:
+      label: Setup
+      options:
+        - Docker Compose
+        - Synology
+        - TrueNAS SCALE
+        - Unraid
+        - CasaOS
+        - umbrelOS
+    validations:
+      required: true

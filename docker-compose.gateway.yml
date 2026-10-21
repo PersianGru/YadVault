@@ -1,0 +1,8 @@
+# Semantic search through the LLM gateway (Settings → Semantic search → Through the LLM gateway).
+# The worker builds the index, so it has to reach the gateway; by default it sits only on the
+# `internal` network, which has no route out. This adds it to `edge` as well. Use it with the
+# main file, or name both in .env so every docker compose command picks it up:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.gateway.yml
+services:
+  worker:
+    networks: [internal, edge]
