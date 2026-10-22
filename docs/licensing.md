@@ -20,6 +20,8 @@ once: nothing has to be imported again, and nothing is deleted when a license en
 | Notes on people | no | yes |
 | Exports (Settings → Your data, identity decisions) | no | yes |
 | Backups (`scripts/backup.sh`, `yadvault backup`) | yes | yes |
+| Watch folder (the unfollower tracker) | a folder on the server | also a shared folder on your NAS, PC or Mac over the network |
+| Bulk sync (the add-on that looks people up on Instagram) | no | yes |
 
 Features the free version does not include stay visible, grayed out with a **Pro** label, so you
 can see what they are. The limits are enforced by the server: what the free version hides is

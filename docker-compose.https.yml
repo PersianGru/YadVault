@@ -5,14 +5,18 @@
 # Turn it off again by removing docker-compose.https.yml from COMPOSE_FILE.
 #
 # HTTPS_MODE chooses the certificate: local (Caddy's own certificate authority, the default),
-# letsencrypt (HTTP challenge, public name and ports) or letsencrypt-dns (DNS challenge, stays on
-# the LAN). See docker/caddy/Caddyfile.
+# letsencrypt (TLS-ALPN challenge, public name and port 443) or letsencrypt-dns (DNS challenge,
+# stays on the LAN). See docker/caddy/Caddyfile.
 # letsencrypt-dns needs Caddy with your DNS provider's module, built once on this server from the
 # official Caddy images: add docker-compose.https-dns.yml as well (docs/https.md).
 #
-# HTTPS_PORT (default 443) and HTTP_PORT (default 80) are the host ports; on a host where other
-# services use 443, for example HTTPS_PORT=8000 (the app's own port, which is closed here).
-# HTTP_PORT only redirects to HTTPS and, in the local mode, serves the CA certificate.
+# HTTPS_PORT (default 443) is the host port; on a host where another service uses 443, for example
+# HTTPS_PORT=8000 (the app's own port, which is closed here). Nothing listens for plain HTTP: a
+# plain http:// request on the HTTPS port is redirected, and the certificate for your devices is
+# at https://<server>/yadvault-ca.crt and in Settings → HTTPS, which also shows its details and
+# expiry, can make a new certificate authority and sets how long each server certificate lasts
+# (CERT_LIFETIME is the default, 12h). The caddy_control volume carries those requests and the
+# certificates (never a key) between Caddy and the app; docker/caddy/run.sh runs Caddy.
 #
 # The app's port 8000 is no longer published, so every request from the LAN goes through Caddy.
 # Only containers of this stack can reach the app directly; that is why it may trust the client
@@ -27,11 +31,16 @@ services:
       YADVAULT_FORWARDED_ALLOW_IPS: "*"
       YADVAULT_HTTPS_MODE: ${HTTPS_MODE:-local}
       YADVAULT_HTTPS_PORT: ${HTTPS_PORT:-443}
-      YADVAULT_HTTP_PORT: ${HTTP_PORT:-80}
+      YADVAULT_HTTPS_DOMAIN: ${CADDY_DOMAIN:-archive.local}
+      YADVAULT_HTTPS_CONTROL_DIR: /caddy-control
+      YADVAULT_CERT_LIFETIME: ${CERT_LIFETIME:-12h}
+    volumes:
+      - caddy_control:/caddy-control
 
   caddy:
     # the official Caddy image; letsencrypt-dns adds docker-compose.https-dns.yml (docs/https.md)
     image: caddy:2.11.7-alpine
+    command: ["sh", "/etc/caddy/run.sh"]
     restart: unless-stopped
     depends_on: [app]
     environment:
@@ -40,16 +49,18 @@ services:
       HSTS: ${HSTS:-on}
       CADDY_DOMAIN: ${CADDY_DOMAIN:-archive.local}
       CADDY_DEFAULT_SNI: ${CADDY_DEFAULT_SNI:-${CADDY_DOMAIN:-archive.local}}
+      CERT_LIFETIME: ${CERT_LIFETIME:-12h}
       DNS_PROVIDER: ${DNS_PROVIDER:-}
       DNS_API_TOKEN: ${DNS_API_TOKEN:-}
       DNS_RESOLVERS: ${DNS_RESOLVERS:-1.1.1.1 9.9.9.9}
     ports:
       - "${BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:443"
-      - "${BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-80}:80"
     volumes:
       - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/caddy/run.sh:/etc/caddy/run.sh:ro
       - caddy_data:/data
       - caddy_config:/config
+      - caddy_control:/control
     networks: [edge]
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
@@ -64,3 +75,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  caddy_control:

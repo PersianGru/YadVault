@@ -2,22 +2,31 @@
 # in .env chooses where the certificate comes from:
 #   local            Caddy's own certificate authority (the default). Works for IP addresses and
 #                    local names without internet access. Every device trusts it once: download it
-#                    from http://<server>/yadvault-ca.crt or Settings → HTTPS.
-#   letsencrypt      Let's Encrypt through the HTTP challenge: CADDY_DOMAIN is a public name that
-#                    points at this server, and ports 80 and 443 are reachable from the internet.
+#                    from Settings → HTTPS or https://<server>/yadvault-ca.crt.
+#   letsencrypt      Let's Encrypt through the TLS-ALPN challenge: CADDY_DOMAIN is a public name
+#                    that points at this server, and port 443 is reachable from the internet.
 #   letsencrypt-dns  Let's Encrypt through the DNS challenge: the server stays on the LAN. Needs a
 #                    domain at a DNS provider with an API (DNS_PROVIDER, DNS_API_TOKEN); the image
 #                    is then built with that provider's module (docker/caddy/Dockerfile).
-# Inside the container Caddy always listens on 443 (HTTPS) and 80 (plain HTTP); HTTPS_PORT and
-# HTTP_PORT are the host ports they are published on.
+# Inside the container Caddy listens on 443 alone; HTTPS_PORT is the host port it is published on.
+# Nothing listens for plain HTTP: a plain http:// request on the HTTPS port is redirected to
+# https:// on the same port, and the certificate download is on the HTTPS site. docker/caddy/run.sh
+# starts Caddy, sets the certificate lifetime (CERT_LIFETIME, changeable in Settings → HTTPS) and
+# makes a new certificate authority when Settings asks for one.
 {
 	admin off
-	# the plain-HTTP site below redirects (and serves the local CA); clients without SNI (an IP
+	# no plain-HTTP server for redirects (there is no plain-HTTP port); clients without SNI (an IP
 	# address in the browser) get the certificate of CADDY_DEFAULT_SNI
 	auto_https disable_redirects
 	default_sni {$CADDY_DEFAULT_SNI:archive.local}
 	# devices install the local CA themselves; the container's own trust store is not touched
 	skip_install_trust
+	pki {
+		ca local {
+			# the intermediate outlives the server certificates (run.sh keeps it at least 4 times as long)
+			intermediate_lifetime {$CA_INTERMEDIATE_LIFETIME:168h}
+		}
+	}
 	servers :443 {
 		# a plain http:// request on the HTTPS port is redirected to https:// on the same port
 		listener_wrappers {
@@ -38,13 +47,22 @@
 (hsts_off) {
 }
 
+# The local authority's server certificates are short-lived and renewed by Caddy on its own;
+# CERT_LIFETIME (or Settings → HTTPS) chooses how long each one lasts.
 (tls_local) {
-	tls internal
+	tls {
+		issuer internal {
+			lifetime {$CERT_LIFETIME:12h}
+		}
+	}
 }
 
+# Without a plain-HTTP port only the TLS-ALPN challenge (port 443) can prove the name.
 (tls_letsencrypt) {
 	tls {
-		issuer acme
+		issuer acme {
+			disable_http_challenge
+		}
 	}
 }
 
@@ -74,13 +92,6 @@
 }
 
 (ca_letsencrypt-dns) {
-}
-
-http:// {
-	import ca_{$HTTPS_MODE:local}
-	handle {
-		redir https://{host}:{$HTTPS_PORT:443}{uri} permanent
-	}
 }
 
 {$CADDY_DOMAIN:archive.local} {

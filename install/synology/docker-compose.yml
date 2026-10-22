@@ -27,7 +27,7 @@ services:
       - no-new-privileges:true
 
   app:
-    image: ghcr.io/persiangru/yadvault:0.2.0
+    image: ghcr.io/persiangru/yadvault:0.3.0
     container_name: yadvault
     command: ["all"]  # the web app and the job worker in one container
     restart: unless-stopped

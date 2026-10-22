@@ -2,7 +2,7 @@ manifestVersion: 1
 id: yadvault
 category: files
 name: YadVault
-version: "0.2.0"
+version: "0.3.0"
 tagline: Your Instagram and Messenger archive, on your own server
 description: >-
   Import the data export Instagram or Facebook gives you and keep it: browse and search your

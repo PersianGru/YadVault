@@ -4,6 +4,31 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.3.0
+
+- **Breaking: no plain HTTP with HTTPS on.** `docker-compose.https.yml` publishes the HTTPS port
+  alone: `HTTP_PORT` and the plain-HTTP redirect and download site are gone (a plain `http://`
+  request on the HTTPS port is still redirected). The certificate for your devices is at
+  `https://<server>/yadvault-ca.crt` and in Settings → HTTPS, and the `letsencrypt` mode proves
+  the name through port 443 (TLS-ALPN). Remove `HTTP_PORT` from `.env` and firewall rules; `docker
+  compose up -d` adds the `caddy_control` volume.
+- **Settings → HTTPS** shows the certificate authority's certificate with its details and expiry
+  date, the server certificate with its expiry, can **make a new authority** (every device then
+  installs the new file; the page warns first) and sets **how long each server certificate
+  lasts** (12 hours by default, `CERT_LIFETIME`; a day to a year, with warnings). Caddy renews the
+  certificates on its own either way. Behind a Cloudflare Tunnel or another proxy, the origin is
+  HTTPS (docs/https.md).
+- **Network folder (Pro):** the unfollower tracker can read a shared folder on your NAS, PC or
+  Mac over the network (`smb://server/share/folder`, public or with a password), so nothing has
+  to be mounted into Docker; new exports there are imported once each (Settings → Import).
+- **The YadVault logo** in the app, as the favicon and touch icon, and as the install templates'
+  icon; a copyright line on every page; important notes have one look (an amber mark); the
+  sidebar's "Open quick menu" button opens the search and navigation menu (Ctrl K).
+- **"Public profiles (add-on)" is now "Bulk sync (add-on)" and part of YadVault Pro**; the free
+  version keeps pictures you upload yourself. The look-up reads the posts a public profile page
+  embeds for logged-out visitors and, when there are none, says so on the person's page instead
+  of showing an empty profile.
+
 ## 0.2.0
 
 - **Breaking: the MCP server is part of the app.** It answers at `/mcp` on the address and port

@@ -13,7 +13,7 @@
 name: yadvault
 
 x-app-common: &app-common
-  image: ghcr.io/persiangru/yadvault:${YADVAULT_VERSION:-0.2.0}
+  image: ghcr.io/persiangru/yadvault:${YADVAULT_VERSION:-0.3.0}
   restart: unless-stopped
   env_file: .env
   environment:
@@ -116,7 +116,7 @@ services:
           memory: ${WORKER_MEMORY_LIMIT:-4g}
 
   embeddings-download:
-    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.2.0}
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.3.0}
     profiles: [embeddings]
     command: ["python", "download_model.py"]
     restart: "no"
@@ -131,7 +131,7 @@ services:
       - no-new-privileges:true
 
   embeddings:
-    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.2.0}
+    image: ghcr.io/persiangru/yadvault-embeddings:${YADVAULT_VERSION:-0.3.0}
     profiles: [embeddings]
     restart: unless-stopped
     depends_on:
@@ -165,7 +165,7 @@ services:
         max-file: "5"
 
   avatar-fetcher:
-    image: ghcr.io/persiangru/yadvault-avatar-fetcher:${YADVAULT_VERSION:-0.2.0}
+    image: ghcr.io/persiangru/yadvault-avatar-fetcher:${YADVAULT_VERSION:-0.3.0}
     profiles: [avatars]
     restart: unless-stopped
     environment:

@@ -54,8 +54,9 @@ The screenshots show made-up data: no real export, name or username.
 - **Your year.** One year in numbers: messages, people, streaks, busiest day, when you write,
   the people you wrote with most, reactions and follows; and a picture to share, drawn in your
   browser, with numbers and (only if you want) first names, never what anyone wrote.
-- **Public profiles (add-on, off by default).** Looks the people in your archive up the way
-  anyone can without logging in: picture, public details and their latest posts and reels, in a
+- **Bulk sync (add-on, Pro, off by default).** Looks the people in your archive up the way
+  anyone can without logging in: picture, public details and the latest posts and reels Instagram
+  shows logged-out visitors, in a
   queue that starts slowly, speeds up a little while all is well and pauses on its own when
   Instagram pushes back; estimates and a warning first, a storage cap, videos only if you want
   them. It never logs in. The free version shows 3 posts per person, Pro all of them.
@@ -164,7 +165,7 @@ change most:
 | `EMBEDDINGS_PROVIDER`, `COMPOSE_PROFILES` | Semantic search on this server (`local`, profile `embeddings`), through the LLM gateway (`gateway`) or `off`; also in Settings |
 | `EMBEDDINGS_MODEL`, `EMBEDDINGS_DEVICE` | The local embedding model and `cpu` or `cuda` (see [docker-compose.gpu.yml](docker-compose.gpu.yml)); choices in [docs/operations.md](docs/operations.md#semantic-search) |
 | `ENABLE_ANNOTATIONS`, `ENABLE_SQL_TOOL` | Let the model add notes and tags, or run read-only SQL; both off by default |
-| `AVATAR_FETCHER_URL`, `ENABLE_AVATAR_FETCH` | The optional public-profile add-on's fetcher (profile `avatars`), off by default |
+| `AVATAR_FETCHER_URL`, `ENABLE_AVATAR_FETCH` | The optional Bulk sync add-on's fetcher (profile `avatars`, Pro), off by default |
 | `*_MEMORY_LIMIT` | Container memory limits |
 
 Profiles: `embeddings` (semantic search on this server), `avatars` (picture fetcher, the only

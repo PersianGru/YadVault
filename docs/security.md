@@ -122,8 +122,8 @@ stored secrets (not `YADVAULT_SECRET_KEY`, which you keep yourself).
   data directory on an encrypted volume (LUKS on Linux, FileVault on macOS, BitLocker on
   Windows, an encrypted dataset or shared folder on a NAS) so a stolen disk does not give the
   archive away; [encryption.md](encryption.md) lists the options per host.
-- **Keep the public-profile add-on off** unless you accept the risks described in Settings and
-  in [operations.md](operations.md#public-profiles-add-on). It never logs in;
+- **Keep the Bulk sync add-on off** unless you accept the risks described in Settings and
+  in [operations.md](operations.md#bulk-sync-add-on-pro). It never logs in;
   its service downloads only from Instagram's media servers (host-checked, also after
   redirects); the app re-encodes every picture and serves posts and videos under a sandboxing
   Content-Security-Policy; bios and captions are shown as plain text and links open only as

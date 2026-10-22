@@ -11,7 +11,7 @@ when something does not work.
 | Profile | Services | Purpose |
 |---|---|---|
 | `embeddings` | `embeddings-download` (one-shot), `embeddings` | Semantic search on this server (see [Semantic search](#semantic-search)) |
-| `avatars` | `avatar-fetcher` | The public-profile add-on's fetcher (no login ever), the only service with internet access |
+| `avatars` | `avatar-fetcher` | The Bulk sync add-on's fetcher (Pro; no login ever), the only service with internet access |
 | `llm` | `ollama`, `openwebui` | A model server (gateway address `http://ollama:11434/v1`) and a chat UI, for people without an LLM gateway yet |
 
 `docker compose --profile embeddings --profile avatars up -d` starts several at once. Profiles
@@ -20,10 +20,10 @@ are remembered per command, so include them in `down` and `logs` calls too, or s
 file, `docker-compose.https.yml` (see [HTTPS](https.md)). The MCP server needs no profile: the app
 serves it at `/mcp` (see [API](api.md#mcp-server)).
 
-### Public profiles (add-on)
+### Bulk sync (add-on, Pro)
 
-The add-on looks the people in your archive up on Instagram's public pages, without a login,
-through the `avatar-fetcher` service. Both are off by default: the service is not started, and the
+The add-on looks the people in your archive up on Instagram's public pages, in bulk and at a
+careful pace, without a login, through the `avatar-fetcher` service. It is part of YadVault Pro. Both are off by default: the service is not started, and the
 switch in Settings is off. To run it:
 
 1. In `.env`, point the app at the service and start the service's profile (keep any profile
@@ -36,23 +36,24 @@ switch in Settings is off. To run it:
 
 2. `docker compose up -d`: it pulls the service, starts it, and recreates `app` and
    `worker` with the address.
-3. In Settings → Public profiles, read the warning and turn the add-on on.
+3. In Settings → Bulk sync, read the warning and turn the add-on on.
 
-Until both are done, Settings → Public profiles says so, and a person's page explains why it
+Until both are done, Settings → Bulk sync says so, and a person's page explains why it
 cannot look anyone up instead of offering it. The service is the only container with internet
 access. What it does and how it stays out of trouble:
 
 - It never logs in (no session files, cookies or proxies) and sees only what Instagram shows
-  anyone who is logged out: a profile's public details, its picture and the latest posts and reels
-  (about 12). Private accounts give details only; stories, highlights, followers and older posts
-  are never asked for.
+  anyone who is logged out: a profile's public details, its picture and, when Instagram embeds
+  them for logged-out visitors, the latest posts and reels (about 12). For many profiles Instagram
+  shows no posts at all without a login; the person's page then says so. Private accounts give
+  details only; stories, highlights, followers and older posts are never asked for.
 - It downloads only over https from Instagram's media servers, also after redirects, and keeps
   nothing on disk; the app re-encodes every picture it stores.
 - It stops at the first sign of a limit: the queue pauses on its own (15 minutes after the first
   block, twice as long after each further block in a row, at most 6 hours) and slows down.
   Lookups are at least `AVATAR_FETCH_PACE_SECONDS` (15) apart; the queue starts at one profile
   every 90 seconds and speeds up only slowly while nothing is blocked.
-- It looks up only the people you queue (Settings → Public profiles, a person's *Look up*, or the
+- It looks up only the people you queue (Settings → Bulk sync, a person's *Look up*, or the
   People page), and only while the add-on is on.
 
 Read the warning in Settings before enabling it: this uses Instagram's unofficial web access, may
@@ -153,8 +154,8 @@ client tools on PATH (or `YADVAULT_PG_BIN`).
 
 ## Network
 
-- Ports: 8000 (web UI, API and MCP), 3000 (Open WebUI), 443/80 (Caddy). They bind to
-  `BIND_ADDRESS` from `.env`.
+- Ports: 8000 (web UI, API and MCP), 3000 (Open WebUI), 443 (Caddy, with HTTPS on; no plain-HTTP
+  port). They bind to `BIND_ADDRESS` from `.env`.
 - Keep them on the LAN. Never forward them on the router. A host firewall rule limited to your
   subnet is the simplest extra guard. Linux with ufw:
 
@@ -166,11 +167,12 @@ client tools on PATH (or `YADVAULT_PG_BIN`).
   Docker publishes ports through its own iptables chain; ufw rules apply when `BIND_ADDRESS` is
   the host's LAN address rather than `0.0.0.0`, or use `DOCKER-USER` chain rules.
 - HTTPS (optional): `docker-compose.https.yml` runs Caddy in front of the app and closes port
-  8000. The certificate comes from Caddy's own certificate authority (devices install it once,
-  from Settings → HTTPS) or from Let's Encrypt, through the DNS challenge (the server stays on
-  the LAN) or the HTTP challenge. [docs/https.md](https.md) has the setup for each, the steps to
-  install the certificate on Windows, macOS, iPhone, Android, Linux and Firefox, and
-  troubleshooting. Behind a reverse proxy of your own instead, set `PROXY_HEADERS=true` and
+  8000; nothing listens for plain HTTP. The certificate comes from Caddy's own certificate
+  authority (devices install it once, from Settings → HTTPS, which also shows its expiry, can
+  make a new one and sets how long server certificates last) or from Let's Encrypt, through the
+  DNS challenge (the server stays on the LAN) or the TLS-ALPN challenge. [docs/https.md](https.md)
+  has the setup for each, the steps to install the certificate on Windows, macOS, iPhone,
+  Android, Linux and Firefox, and troubleshooting. Behind a reverse proxy of your own instead, set `PROXY_HEADERS=true` and
   `FORWARDED_ALLOW_IPS` to that proxy's address only: with `*` and port 8000 reachable, any
   client could choose the address the login limits count.
 - An LLM gateway elsewhere on the LAN (LiteLLM, for example): the app only needs to reach its
@@ -234,6 +236,14 @@ model's size (`vector` up to 2,000 dimensions, `halfvec` up to 4,000).
   folder with the export or all its zip parts) are imported once they stop changing for a
   minute, and the bell (and an optional webhook such as ntfy, with counts only) says who
   unfollowed you. Each export is imported once.
+- **Network folder (Pro):** instead of a folder mounted into Docker, Settings → Import can name a
+  shared folder on your NAS, PC or Mac (`smb://server/share/folder`; Windows file sharing, macOS
+  File Sharing, Samba), public or with a username and password (kept encrypted). The worker
+  reads it itself over SMB every 30 seconds, copies an export that has not changed for a minute
+  to the server, imports it like the watch folder's and removes the copy (the original too when
+  "delete after import" is on). *Test the connection* lists what the folder holds. Give the
+  account read access, and write access only for deleting. Only SMB is spoken; an NFS export can
+  still be mounted on the host and used through `docker-compose.watch.yml`.
 - **Storage page:** Settings → Storage shows free disk space, what the database and the data
   folder hold, the biggest conversations and people, and cleanup tasks (left-over uploads,
   thumbnails, media of rolled-back imports, leftovers of interrupted work, copied media by kind

@@ -229,9 +229,10 @@ them and what they sent anywhere. Follow the job with
 `GET /api/jobs/{id}`; its `progress.result` says what was freed. Rolling back an import removes
 the media copied for it by itself.
 
-## Public profiles (add-on)
+## Bulk sync (add-on)
 
-Off by default, never an Instagram login; needs the fetcher service (compose profile `avatars`).
+Part of YadVault Pro (the free version gets `402`, and `locked` from the person's profile); off by
+default, never an Instagram login; needs the fetcher service (compose profile `avatars`).
 `GET /api/profiles/status` (admins) reports whether the add-on is on and the service deployed,
 the queue by status (`queued`, `done`, `private`, `missing`, `failed`), the pace
 (`rate.interval_seconds`) and any pause after a block (`paused`, `rate.paused_until`), the cache
@@ -242,7 +243,7 @@ the one `profile_sync` job, which looks up one person per run and puts itself ba
 `run_after` for its pace. `POST /api/profiles/pause`, `POST /api/profiles/resume` and
 `DELETE /api/profiles/queue` control it; `POST /api/people/{id}/profile/sync` puts one person
 first. `GET /api/people/{id}/profile` is what was found (public details and posts, newest
-first; the free version shows the latest 3 and says `limited`) plus `enabled` and `deployed`, so
+first; `details.posts_note` says when Instagram showed no posts to a logged-out visitor) plus `enabled` and `deployed`, so
 the page offers a look-up only when one can run; the queue and sync calls answer `409` with what
 to set when the add-on is off or no service is deployed. `GET /api/profile-posts/{id}/image`
 and `/video` serve the cached files under the same sandboxing Content-Security-Policy as media.
