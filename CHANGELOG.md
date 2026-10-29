@@ -4,6 +4,17 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.3.1
+
+- **Semantic search model download fixed.** On a new install the one-time `embeddings-download`
+  job could not download the embedding model (it stayed in offline mode), so `docker compose up
+  -d` stopped with `service "embeddings-download" didn't complete successfully` and semantic
+  search had no model. It now downloads the model once and, when the model is already in the
+  cache volume, starts without touching the network. Installs that hit the error: update and run
+  `docker compose up -d` again.
+- **Network watch folder (Pro):** file names read from the share are checked more strictly, so
+  a listing can never place a file outside the import folder.
+
 ## 0.3.0
 
 - **Breaking: no plain HTTP with HTTPS on.** `docker-compose.https.yml` publishes the HTTPS port
