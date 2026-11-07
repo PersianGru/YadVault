@@ -1,0 +1,24 @@
+# Ties the YadVault Pro license to this server: the app and the worker read the host's machine ID
+# (/etc/machine-id, read-only), so a license works on this server only, also after a database or a
+# backup is copied elsewhere. For Linux hosts that have /etc/machine-id (`cat /etc/machine-id`
+# prints 32 hex characters); on others, leave this file out: YadVault then ties the license to its
+# data folder. Add it in .env:  COMPOSE_FILE=docker-compose.yml:docker-compose.machine-id.yml
+# Changing this later gives the installation a new installation ID, which needs a new license file.
+
+services:
+  app:
+    volumes:
+      - type: bind
+        source: /etc/machine-id
+        target: /run/host/machine-id
+        read_only: true
+        bind:
+          create_host_path: false
+  worker:
+    volumes:
+      - type: bind
+        source: /etc/machine-id
+        target: /run/host/machine-id
+        read_only: true
+        bind:
+          create_host_path: false

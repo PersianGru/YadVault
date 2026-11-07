@@ -1,7 +1,7 @@
 # Free version and YadVault Pro
 
-YadVault runs as the free version until it has a license key. A key turns YadVault Pro on at
-once: nothing has to be imported again, and nothing is deleted when a license ends.
+YadVault runs as the free version until it has a license. A license file turns YadVault Pro on
+at once: nothing has to be imported again, and nothing is deleted when a license ends.
 
 ## What each includes
 
@@ -42,57 +42,93 @@ conversation or person by its address shows what Pro would unlock instead.
 
 ## Your installation ID
 
-Every installation has its own ID, shown in Settings → License (with a copy button) and by
-`docker compose exec app yadvault license id`. Give it when you ask for a trial or buy Pro: the
-key is made for this installation and works only here (the "Get YadVault Pro" button passes the
-ID to the shop for you). The ID stays the same through restarts, updates and a restored backup,
-so moving to a new server with your backup keeps your license. A brand-new installation (a new,
-empty database) gets a new ID and needs its own key.
+Every installation has its own ID, 38 digits shown in groups of five in Settings → License (with
+a copy button) and by `docker compose exec app yadvault license id`. Give it when you ask for a
+trial or buy Pro: the license is made for this installation on this server and works only there
+(the "Get YadVault Pro" button passes the ID to the shop for you). The ID stays the same through
+restarts and updates.
 
-## Entering a license key
+The ID is tied to the server. When the database moves to another server (a restored backup, a
+copied database) the installation gets a new ID there and needs a new license file for it; ask
+support, giving both IDs. A brand-new installation also gets a new ID and needs its own license.
 
-You receive the key by email; paste it as it is. Case does not matter, and dashes and spaces are
-ignored. Use one of these:
+### Machine ID
 
-1. **Settings → License** (admins): paste the key, **Check** shows what it unlocks, **Activate**
-   saves it. **Remove the key** goes back to the free version.
-2. **`.env`** on the server: `YADVAULT_LICENSE_KEY=<key>`, then `docker compose up -d`. Or put the
-   key in a file and set `YADVAULT_LICENSE_FILE` to its path inside the containers (a Docker
-   secret, for example). A key set here wins over Settings, and Settings → License shows it
-   without letting anyone change it in the browser.
-3. **The command line:**
+On a Linux server that has `/etc/machine-id` (`cat /etc/machine-id` prints 32 hex characters),
+tie the ID to the server itself: add the file `docker-compose.machine-id.yml` in `.env`
+
+```bash
+COMPOSE_FILE=docker-compose.yml:docker-compose.machine-id.yml
+```
+
+and run `docker compose up -d`. Without it, YadVault ties the ID to its data folder (a value kept
+there and left out of backups). Settings → License says which one is used. Do this before you
+order: switching later gives the installation a new ID, which needs a new license file.
+
+## Entering your license
+
+After you order (or when your trial is approved) you receive a **license file** by email; it is
+also on your order page. It is a short text file that looks like this:
+
+```text
+-----BEGIN 21CEL LICENSE-----
+Product: YadVault (yadvault)
+Licensed-To: ...
+Expires: ...
+
+eyJhbGciOiJFZERTQSIs...
+-----END 21CEL LICENSE-----
+```
+
+Use the whole file, as it is. The license key in the same email is for support; YadVault needs
+the file. A license key from before license files keeps working until it ends. Use one of these:
+
+1. **Settings → License** (admins): paste the file, or **Open a license file**; **Check** shows
+   what it unlocks, **Activate** saves it. **Remove the license** goes back to the free version.
+2. **On the server:** save the file and set `YADVAULT_LICENSE_FILE` in `.env` to its path inside
+   the containers (a Docker secret, for example), then `docker compose up -d`.
+   (`YADVAULT_LICENSE_KEY` takes a key, or the long line of the file between its header and its
+   last line.) A license set here wins over Settings, and Settings → License shows it without
+   letting anyone change it in the browser.
+3. **The command line**, with the file copied into the container or a key:
 
    ```bash
-   docker compose exec app yadvault license set <key>
+   docker compose exec app yadvault license set /path/to/yadvault-license.txt
    ```
 
    `yadvault license status` shows the license and what the free version hides right now;
-   `yadvault license remove` removes a key saved in Settings.
+   `yadvault license remove` removes a license saved in Settings.
 
-### Checking a key before you activate it
+### Checking a license before you activate it
 
 **Check** in Settings → License, or on the server:
 
 ```bash
-docker compose exec app yadvault license check <key>
+docker compose exec app yadvault license check /path/to/yadvault-license.txt
 ```
 
-Both run the same verification as the product itself and print the license number, the dates,
-the number of accounts and whether the key is for this installation only, or why the key is not
-valid ("made for another installation" means the key was issued for a different installation ID).
-Nothing is saved.
+Both run the same verification as the product itself and print the license, the plan, the dates,
+the number of accounts and whether it is for this installation only, or why it is not valid
+("made for another installation" means it was issued for a different installation ID). Nothing
+is saved.
+
+### Messages from support
+
+A license file can carry a short message from YadVault support, for example about a renewal.
+Settings → License shows it; a warning is also shown to admins at the top of every page. Messages
+are plain text. To change or remove one, support sends you a new license file.
 
 ## Dates, reminders and renewal
 
 - From 30 days before the end date, admins see a reminder at the top of every page.
-- After the end date, Pro keeps working for a grace period of 14 days. Trial (proof of value)
-  licenses have no grace period.
+- After the end date, Pro keeps working for a grace period (14 days for most licenses; the
+  license says how long). Trial licenses have no grace period.
 - After that the free version runs. Everything imported while Pro was on stays visible,
   including in search and Insights; the free limits apply only to what is imported later. Pro
   features turn off, and accounts other than the first cannot sign in. They are kept and work
-  again with a new key.
+  again with a new license.
 - A license that starts in the future shows its start date; the free version runs until then.
-- To renew, enter the new key. It replaces the old one.
+- To renew, enter the new license file you receive after each payment. It replaces the old one.
 
 YadVault remembers the latest date it has seen. Setting the server's clock back does not extend a
 license.
@@ -106,6 +142,7 @@ cannot sign in until accounts are removed or the license allows more.
 
 ## Your license stays on your server
 
-The key is checked on your server, offline: there is no activation server, and YadVault never
-contacts anyone about your license. A key holds no name, no email address and nothing else about
-your server.
+The license is checked on your server, offline: there is no activation server, and YadVault
+never contacts anyone about your license. A license file holds the name on the license and, for
+an installation-bound license, a one-way code of your installation ID; nothing else about your
+server.

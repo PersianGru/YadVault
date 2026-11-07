@@ -4,6 +4,21 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.4.1
+
+- **21CL license files.** Licenses from the 21CL License Hub are now accepted: in Settings →
+  License paste or open the license file (or set `YADVAULT_LICENSE_FILE`, or run `yadvault
+  license set <file>`). Earlier versions refused these licenses with an error about the key's
+  length. If you paste a 21CL key instead of the file, the page tells you to use the file. The
+  plan, the name on the license, the dates, the number of accounts and the hub's messages are
+  shown. Keys issued before keep working until they end.
+- **Licenses are tied to the server.** The installation ID is now 38 digits, shown in groups of
+  five, and holds a one-way code of the machine. A database restored or copied onto another
+  server gets a new ID there, and a license file made for the old ID needs a new one. For an ID
+  that survives a rebuilt container, add `docker-compose.machine-id.yml`. `yadvault license
+  request <key>` prints the code for the hub's offline activation page. The update runs a
+  database migration on start.
+
 ## 0.3.1
 
 - **Semantic search model download fixed.** On a new install the one-time `embeddings-download`
