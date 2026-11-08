@@ -4,6 +4,13 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.5.2
+
+- **A second import works again.** Importing a newer export on top of an earlier one could stop
+  with `duplicate key value violates unique constraint "uq_people_subject_key"`: two entries in
+  People both stood for you. They are now merged into one before the import goes on. Run the
+  import again after updating. No migration.
+
 ## 0.5.1
 
 - **Uploading an export in the browser works again.** Import → Upload could stop at the end
