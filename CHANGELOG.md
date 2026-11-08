@@ -4,6 +4,14 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.5.1
+
+- **Uploading an export in the browser works again.** Import → Upload could stop at the end
+  with `Upload failed: {"incomplete": ...}` and a list of missing pieces, although every piece
+  had been sent: the browser sends several pieces at once and the server lost track of some of
+  them. Every piece is now recorded. Upload the export again after updating; nothing else
+  changes. No migration.
+
 ## 0.5.0
 
 - **Activate with your license key.** Paste the `YDV-…` key from your order email in Settings →
