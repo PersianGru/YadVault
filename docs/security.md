@@ -62,7 +62,8 @@ Nothing is sent to the project's authors; there is no telemetry and no update ch
 
 ## License keys
 
-A license key is checked on the server, offline; the app never contacts anyone about it. A key
+A license is checked on the server, offline. The app contacts the 21CL License Hub only when an
+admin activates a license key, once, to fetch its license file; nothing else. A key
 saved in Settings is kept in a private table, which the AI tools' database role cannot read. The
 free version's limits are enforced by the API, not by the browser: hidden conversations, people
 and records are left out of every list, search and AI tool result, and opening one directly

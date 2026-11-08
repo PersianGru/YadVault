@@ -67,8 +67,17 @@ order: switching later gives the installation a new ID, which needs a new licens
 
 ## Entering your license
 
-After you order (or when your trial is approved) you receive a **license file** by email; it is
-also on your order page. It is a short text file that looks like this:
+After you order (or when your trial is approved) you receive a **license key** (`YDV-XXXXX-…`)
+by email. The easiest way: paste the key in **Settings → License** and press **Activate**.
+YadVault sends the key, your installation ID and a one-way code of the machine to the 21CL License Hub
+once, over HTTPS, and receives your **license file**, which it checks and saves. This is the only
+time YadVault contacts anyone about your license; after that it runs offline. The same works on
+the command line: `docker compose exec app yadvault license set YDV-XXXXX-…`.
+
+A server without internet uses the license file itself. It may be in the email and on your order
+page; otherwise `docker compose exec app yadvault license request YDV-XXXXX-…` prints an
+**activation request code**: paste it on the 21CL License Hub's offline activation page from any
+device with internet, and you get the file. It is a short text file that looks like this:
 
 ```text
 -----BEGIN 21CEL LICENSE-----
@@ -80,11 +89,12 @@ eyJhbGciOiJFZERTQSIs...
 -----END 21CEL LICENSE-----
 ```
 
-Use the whole file, as it is. The license key in the same email is for support; YadVault needs
-the file. A license key from before license files keeps working until it ends. Use one of these:
+Use the whole file, as it is. A license key from before license files keeps working until it
+ends. Use one of these:
 
-1. **Settings → License** (admins): paste the file, or **Open a license file**; **Check** shows
-   what it unlocks, **Activate** saves it. **Remove the license** goes back to the free version.
+1. **Settings → License** (admins): paste the license key or the file, or **Open a license
+   file**; **Check** shows what a file unlocks, **Activate** saves it (for a key, after fetching
+   its file). **Remove the license** goes back to the free version.
 2. **On the server:** save the file and set `YADVAULT_LICENSE_FILE` in `.env` to its path inside
    the containers (a Docker secret, for example), then `docker compose up -d`.
    (`YADVAULT_LICENSE_KEY` takes a key, or the long line of the file between its header and its
@@ -142,7 +152,8 @@ cannot sign in until accounts are removed or the license allows more.
 
 ## Your license stays on your server
 
-The license is checked on your server, offline: there is no activation server, and YadVault
-never contacts anyone about your license. A license file holds the name on the license and, for
+The license is checked on your server, offline. YadVault contacts the 21CL License Hub only when
+an admin activates a license key, once, to fetch the license file; there are no check-ins after
+that, and a license file entered directly needs no internet at all. A license file holds the name on the license and, for
 an installation-bound license, a one-way code of your installation ID; nothing else about your
 server.

@@ -4,6 +4,21 @@ Releases of YadVault and of the deployment files in this repository. Each releas
 images of that version (`YADVAULT_VERSION` in `.env.example`); versions follow
 [Semantic Versioning](https://semver.org/), and breaking changes are called out here.
 
+## 0.5.0
+
+- **Activate with your license key.** Paste the `YDV-…` key from your order email in Settings →
+  License and press **Activate**: YadVault fetches the license file from the 21CL License Hub
+  with one HTTPS request (the key, the installation ID and a one-way code of the machine) and
+  turns the trial or Pro on. The same works with `yadvault license set YDV-…`. This is the only
+  time YadVault contacts anyone about your license; there are no check-ins afterwards. A server
+  without internet still uses the license file (pasted, opened, `YADVAULT_LICENSE_FILE`, or the
+  hub's offline activation page with `yadvault license request <key>`). An activation request
+  code pasted into YadVault is recognised, and the page says where it belongs. No migration.
+- **One-folder download.** Each release on GitHub now carries `yadvault-X.Y.Z.tar.gz` and
+  `.zip`: one folder with the compose files, `.env.example`, the README, the scripts and the
+  docs, as an alternative to `git clone`. Updating either way: see `docs/operations.md`,
+  *Updating* (set `YADVAULT_VERSION` in your `.env`).
+
 ## 0.4.1
 
 - **21CL license files.** Licenses from the 21CL License Hub are now accepted: in Settings →

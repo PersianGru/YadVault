@@ -86,6 +86,16 @@ docker compose pull
 docker compose up -d
 ```
 
+Before `pull`, bring the files and the version to the new release; your `.env` stays yours:
+
+- **A clone:** `git pull` (or `git checkout vX.Y.Z`).
+- **A downloaded folder:** extract the new `yadvault-X.Y.Z` folder next to the old one and copy
+  your `.env` (and `backups/`, `watch/` or other folders you made there) into it; run the
+  commands from the new folder. The Docker volumes with your data stay where they are.
+
+Then set `YADVAULT_VERSION=X.Y.Z` in `.env`: it pins the images and is not changed by an update
+of the files.
+
 Migrations run automatically when `app` and `worker` start, under a database lock, so the order
 does not matter. Downgrades are not supported: restore a backup to go back. Release notes are in
 [CHANGELOG.md](../CHANGELOG.md); versions follow semantic versioning and breaking changes are

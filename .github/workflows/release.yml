@@ -1,0 +1,60 @@
+name: Release
+
+# For each release tag: one folder with everything needed to run YadVault (the compose files,
+# .env.example, the README, the scripts and the docs), as yadvault-X.Y.Z.tar.gz and .zip on the
+# GitHub release, with the release notes from CHANGELOG.md.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v0.5.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Download and release notes
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: The tag matches the pinned version
+        run: |
+          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "not a release tag: $TAG"; exit 1;; esac
+          grep -qx "YADVAULT_VERSION=${TAG#v}" .env.example || { echo ".env.example does not pin ${TAG#v}"; exit 1; }
+      - name: Build the folder
+        run: |
+          v="${TAG#v}"; d="yadvault-$v"
+          mkdir -p "dist/$d"
+          cp README.md LICENSE CHANGELOG.md SECURITY.md .env.example docker-compose*.yml "dist/$d/"
+          cp -r docker scripts docs "dist/$d/"
+          chmod 755 "dist/$d"/scripts/*.sh "dist/$d"/docker/caddy/run.sh "dist/$d"/docker/db/init/*.sh
+          (cd dist && tar -czf "$d.tar.gz" "$d" && zip -qr "$d.zip" "$d")
+          (cd dist && sha256sum "$d.tar.gz" "$d.zip" > SHA256SUMS)
+          awk -v h="## $v" '$0==h{on=1;next} on&&/^## /{exit} on' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "CHANGELOG.md has no section $v"; exit 1; }
+          cat >> notes.md <<EOF
+
+          **Install or update:** download \`$d.tar.gz\` (or \`.zip\`) below, or \`git clone\` this
+          repository at \`$TAG\`. Updating an existing install: set \`YADVAULT_VERSION=$v\` in your
+          \`.env\`, then \`docker compose pull && docker compose up -d\` (\`docs/operations.md\`, *Updating*).
+          EOF
+      - name: Publish the release
+        run: |
+          v="${TAG#v}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.tar.gz dist/*.zip dist/SHA256SUMS --clobber
+            gh release edit "$TAG" --title "YadVault $v" --notes-file notes.md --latest
+          else
+            gh release create "$TAG" dist/*.tar.gz dist/*.zip dist/SHA256SUMS --title "YadVault $v" \
+              --notes-file notes.md --verify-tag --latest
+          fi

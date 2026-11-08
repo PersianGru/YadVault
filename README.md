@@ -88,6 +88,18 @@ You need Docker Engine with Compose v2 on a Linux, macOS or Windows machine on y
 embeddings), and disk space for the export plus roughly
 0.6 GB of database per million messages.
 
+Either download the release folder (the compose files, `.env.example`, this README, the scripts
+and the docs in one folder): `yadvault-X.Y.Z.tar.gz` or `.zip` from the
+[latest release](https://github.com/PersianGru/YadVault/releases/latest),
+
+```bash
+tar -xzf yadvault-X.Y.Z.tar.gz
+cd yadvault-X.Y.Z
+cp .env.example .env
+```
+
+or clone the repository:
+
 ```bash
 git clone https://github.com/PersianGru/YadVault.git yadvault
 cd yadvault
